@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Repositories\StudentRepository;
 use App\Repositories\UserRepository;
 use App\Services\Admin\StudentService;
 use Exception;
@@ -13,12 +14,14 @@ use Illuminate\Support\Facades\Hash;
 class StudentController extends Controller
 {
     //
-    protected $studentRepository, $studentService;
+    protected $userRepository, $studentRepository, $studentService;
 
     public function __construct(
-        UserRepository $studentRepository,
+        UserRepository $userRepository,
+        StudentRepository $studentRepository,
         StudentService $studentService
     ) {
+        $this->userRepository = $userRepository;
         $this->studentRepository = $studentRepository;
         $this->studentService = $studentService;
     }
@@ -64,7 +67,7 @@ class StudentController extends Controller
                 $input['user_img'] = $name;
             }
 
-            $data = [
+            $userData = [
                 'name' => $input['name'],
                 'email' => $input['email'],
                 'password' => Hash::make($input['password']),
@@ -76,11 +79,23 @@ class StudentController extends Controller
                 'status' => 0,
             ];
 
-            $student = $this->studentRepository->store($data);
+            $user = $this->userRepository->store($userData);
+
+            $studentData = [
+                'grade' => $input['grade'],
+                'age'   => $input['age'],
+                'parents_name'  =>  $input['parents_name'],
+                'city'  =>  $input['city'],
+                'address' => $input['address'],
+                'phone_number'  =>  $input['phone_number'],
+                'user_id'   => $user->id,
+            ];
+
+            $student = $this->studentRepository->store($studentData);
 
 
-            if ($student) {
-                return response()->json($student);
+            if ($user && $student) {
+                return response()->json([$user, $student]);
             }
         } catch (Exception $e) {
             return response()->json(['message' => $e->getMessage()], Response::HTTP_FORBIDDEN);
@@ -97,11 +112,30 @@ class StudentController extends Controller
     {
         //
         try {
-            $student = $this->studentRepository->getById($id);
+            $user = $this->userRepository->withById($id, 'student');
+            //$student = $this->studentRepository->getById($id);
 
-            if ($student) {
-                return response()->json($student);
-            }
+            $student = [
+                'id'    => $user->id,
+                'name'  =>  $user->name,
+                'email' =>  $user->email,
+                'role'  =>  $user->role,
+                'status'    =>  $user->role,
+                'image'  =>  $user->user_img,
+                'is_online' =>  $user->is_online,
+                'grade' =>  $user->student->grade,
+                'age'   =>  $user->student->age,
+                'parents_name'  =>  $user->student->parents_name,
+                'city'  =>  $user->student->city,
+                'address'   => $user->student->address,
+                'phone_number'  =>  $user->student->phone_number
+            ];
+
+            return response()->json($student);
+
+            /* if ($user) {
+                return response()->json($user);
+            } */
         } catch (Exception $e) {
             return response()->json(['message' => $e->getMessage()], Response::HTTP_FORBIDDEN);
         }
@@ -117,36 +151,46 @@ class StudentController extends Controller
     public function update(Request $request, $id)
     {
         try {
-            $student = $this->studentRepository->getById($id);
+            $user = $this->userRepository->getById($id);
 
             $input = $request->all();
-            $input['user_img'] = $student->user_img;
+            //$data['user_img'] = $student->user_img;
 
             if ($file = $request->file('user_img')) {
-
                 $name = 'user_' . time() . $file->getClientOriginalName();
-
-                if ($student->user_img != null) {
-                    unlink(public_path() . '/images/users/' . $student->user_img);
-                }
-
                 $file->move('images/users/', $name);
                 $input['user_img'] = $name;
             }
 
-            $data = [
+            $userData = [
                 'name' => $input['name'],
                 'email' => $input['email'],
-                'mobile' => $input['mobile'],
+                'password' => Hash::make($input['password']),
+                'mobile' => $request->mobile ? $input['mobile'] : "",
                 'address' => $input['address'],
                 'city' => $input['city'],
                 'role' => $input['role'],
                 'user_img' => $input['user_img'],
+                'status' => 0,
             ];
 
-            $updatedStudent = $this->studentRepository->update($id, $data);
+            //return response()->json($input);
 
-            if ($updatedStudent) {
+            $updatedUser = $this->userRepository->update($id, $userData);
+
+            $studentData = [
+                'grade' => $input['grade'],
+                'age'   => $input['age'],
+                'parents_name'  =>  $input['parents_name'],
+                'city'  =>  $input['city'],
+                'address' => $input['address'],
+                'phone_number'  =>  $input['phone_number'],
+                'user_id'   => $user->id,
+            ];
+
+            $updatedStudent = $this->studentRepository->update($user->student->id, $studentData);
+
+            if ($updatedUser && $updatedStudent) {
                 return response()->json($updatedStudent);
             }
         } catch (Exception $e) {
@@ -163,7 +207,7 @@ class StudentController extends Controller
     public function destroy($id)
     {
         try {
-            $student = $this->studentRepository->destroy($id);
+            $student = $this->userRepository->destroy($id);
 
             if ($student) {
                 return response()->json($id);

@@ -137,19 +137,4 @@ class TopicController extends Controller
             return response()->json(['message' => $e->getMessage()], Response::HTTP_FORBIDDEN);
         }
     }
-
-    public function deleteperquizsheet($id)
-    {
-        $findanswersheet = Answer::where('topic_id', '=', $id)->get();
-
-        if ($findanswersheet->count() > 0) {
-            foreach ($findanswersheet as $value) {
-                $value->delete();
-            }
-
-            return back()->with('deleted', 'Answer Sheet Deleted For This Quiz !');
-        } else {
-            return back()->with('added', 'No Answer Sheet Found For This Quiz !');
-        }
-    }
 }

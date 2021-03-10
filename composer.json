@@ -16,7 +16,9 @@
         "laravel/framework": "^8.12",
         "laravel/passport": "^10.1",
         "laravel/tinker": "^2.5",
+        "league/omnipay": "^3.1",
         "maatwebsite/excel": "^3.1",
+        "omnipay/paypal": "^3.0",
         "pusher/pusher-php-server": "^4.1"
     },
     "require-dev": {

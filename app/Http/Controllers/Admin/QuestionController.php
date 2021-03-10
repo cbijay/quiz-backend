@@ -23,6 +23,13 @@ class QuestionController extends Controller
         $this->questionService = $questionService;
     }
 
+    public function askedQuestion()
+    {
+        $questions = $this->questionService->askedQuestion();
+
+        return response()->json($questions);
+    }
+
     public function allQuestions()
     {
         $topics = $this->questionRepository->get();
@@ -30,13 +37,39 @@ class QuestionController extends Controller
         return response()->json($topics);
     }
 
-    public function updateStatus($id)
+    public function updateStatus($topicId, $id, $status)
     {
         try {
+            $updateStatus = $this->questionService->updateStatus($id, $status);
 
-            $question = $this->questionService->updateStatus($id);
+            if ($updateStatus) {
+                $questions = $this->questionService->getByTopics($topicId);
+                return response()->json($questions);
+            }
+        } catch (Exception $e) {
+            return response()->json(['message' => $e->getMessage()], Response::HTTP_FORBIDDEN);
+        }
+    }
+
+    public function openQuestion($id, $status)
+    {
+        try {
+            $question = $this->questionService->openQuestion($id, $status);
 
             event(new ActiveQuestion());
+
+            if ($question) {
+                return response()->json($question);
+            }
+        } catch (Exception $e) {
+            return response()->json(['message' => $e->getMessage()], Response::HTTP_FORBIDDEN);
+        }
+    }
+
+    public function resetTimer($id, $status)
+    {
+        try {
+            $question = $this->questionService->resetTimer($id, $status);
 
             if ($question) {
                 return response()->json($question);
@@ -99,7 +132,6 @@ class QuestionController extends Controller
             $data['topic_id'] = $topicId;
 
             if ($file = $request->file('question_img')) {
-
                 $name = 'question_' . time() . $file->getClientOriginalName();
                 $file->move('images/questions/', $name);
                 $data['question_img'] = $name;

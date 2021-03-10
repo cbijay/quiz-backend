@@ -10,7 +10,7 @@ class QuestionService
 {
     public function activeQuestion()
     {
-        $question = Question::where('status', 1)->orderBy('id', 'DESC')->first();
+        $question = Question::where('status', '!=', 0)->orderBy('updated_at', 'DESC')->first();
         $userAnswers = isset($question) ?? count($question->answers) > 0 ? $question->answers : [];
 
         $activeUser = collect();
@@ -27,7 +27,8 @@ class QuestionService
                 'timer' => isset($question) ? $question->topic->timer : 0,
                 'answer' => isset($question) ? $question->answer : '',
                 'status' => isset($question) ? $question->status : 0,
-                'users' => "",
+                'reset' => $question->reset,
+                'users' => [],
             ];
         } else {
             $activeQuestion = '';
@@ -39,6 +40,7 @@ class QuestionService
                 $user = User::where('id', $answer->user_id)->first();
 
                 $answerUser = (object)[
+                    'id'    =>  $user->id,
                     'name' => $user->name,
                     'user_img' => $user->user_img,
                     'answer' => $answer
@@ -46,7 +48,6 @@ class QuestionService
 
                 $activeUser->push($answerUser);
             }
-
             $activeQuestion->users = $activeUser;
         }
 

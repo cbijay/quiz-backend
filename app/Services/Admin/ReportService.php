@@ -26,16 +26,26 @@ class ReportService
 
         foreach ($students as $student) {
             $studentAnswers = $student->studentAnswer($topicId);
-            $filterStudent = [
-                'name' => $student->name,
-                'mobile' => $student->mobile,
-                'questions' => $c_que,
-                'answers' => $studentAnswers
-            ];
-            $reportstudents->push($filterStudent);
+            if (count($studentAnswers) > 0) {
+                $filterStudent = [
+                    'id' => $student->id,
+                    'name' => $student->name,
+                    'mobile' => $student->mobile,
+                    'questions' => $c_que,
+                    'answers' => $studentAnswers
+                ];
+                $reportstudents->push($filterStudent);
+            }
         }
 
-        $reportstudents = $reportstudents->unique();
         return $reportstudents;
+    }
+
+    public function deleteUserAnswer($topicId, $userId)
+    {
+        $answer = Answer::where('user_id', $userId)->where('topic_id', $topicId)->first();
+        $answer->delete();
+
+        return $answer;
     }
 }

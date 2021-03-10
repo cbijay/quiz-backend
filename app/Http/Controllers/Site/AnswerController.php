@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Site;
 
+use App\Events\ActiveQuestion;
 use App\Events\ParticipantScore;
 use App\Http\Controllers\Controller;
 use App\Repositories\AnswerRepository;
@@ -40,6 +41,7 @@ class AnswerController extends Controller
             broadcast(new ParticipantScore())->toOthers();
 
             if ($userAnswer) {
+                event(new ActiveQuestion());
                 return response()->json($userAnswer);
             }
         } catch (Exception $e) {

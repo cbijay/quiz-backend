@@ -34,10 +34,17 @@ class BaseRepository implements BaseRepositoryInterface
         return $this->model->findOrFail($id);
     }
 
+    public function withById($id, $table)
+    {
+        return $this->model->where('id', $id)->with($table)->first();
+    }
+
     public function update($id, array $attributes)
     {
         $item = $this->model->findOrFail($id);
-        $item->update($attributes);
+        $item->fill($attributes);
+        $item->save();
+        //$item->update($attributes);
         return $item;
     }
 

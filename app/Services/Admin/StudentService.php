@@ -4,12 +4,13 @@ namespace App\Services\Admin;
 
 use App\Models\Topic;
 use App\Models\User;
+use Illuminate\Support\Facades\Cache;
 
 class StudentService
 {
     public function getStudent()
     {
-        $student = User::where('role', '!=', 'A')->get();
+        $student = User::where('role', '!=', 'A')->with('student')->get();
         return $student;
     }
 
@@ -36,13 +37,15 @@ class StudentService
             $answers = $student->answers;
 
             $participant = (object) [
+                'id'    => $student->id,
                 'name' => $student->name,
+                'image' => $student->user_img,
                 'per_q_mark' => 0,
+                'isOnline' => $student->is_online,
                 'answers' => $student->answers,
             ];
 
             if (count($answers) > 0) {
-
                 foreach ($answers as $answer) {
                     $topic = Topic::where('id', $answer->topic_id)->first();
                     $participant->per_q_mark = $topic->per_q_mark;
