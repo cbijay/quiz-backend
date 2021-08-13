@@ -3,19 +3,20 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
-use Illuminate\Http\Request;
-use App\Answer;
 use App\Repositories\TopicRepository;
+use Illuminate\Http\Request;
+use App\Services\Admin\TopicService;
 use Exception;
 use Illuminate\Http\Response;
 
 class TopicController extends Controller
 {
     //
-    protected $topicRepository, $topicService;
+    protected $topicService, $topicRepository;
 
-    public function __construct(TopicRepository $topicRepository)
+    public function __construct(TopicService $topicService, TopicRepository $topicRepository)
     {
+        $this->topicService = $topicService;
         $this->topicRepository = $topicRepository;
     }
 
@@ -27,7 +28,7 @@ class TopicController extends Controller
     public function index()
     {
 
-        $topics = $this->topicRepository->get();
+        $topics = $this->topicService->get();
         return response()->json($topics);
     }
 
@@ -53,7 +54,7 @@ class TopicController extends Controller
                 'status' => $input['status'],
             ];
 
-            $topic = $this->topicRepository->store($data);
+            $topic = $this->topicService->store($data);
 
             if ($topic) {
                 return response()->json($topic);
@@ -72,7 +73,7 @@ class TopicController extends Controller
     {
         //
         try {
-            $topic = $this->topicRepository->getById($id);
+            $topic = $this->topicService->getById($id);
 
             if ($topic) {
                 return response()->json($topic);
@@ -92,7 +93,7 @@ class TopicController extends Controller
     public function update(Request $request, $id)
     {
         try {
-            $topic = $this->topicRepository->getById($id);
+            $topic = $this->topicService->getById($id);
 
             if (isset($request->show_ans)) {
                 $topic->show_ans = 1;
@@ -109,7 +110,7 @@ class TopicController extends Controller
                 'amount' => $request->amount,
             ];
 
-            $updatedTopic = $this->topicRepository->update($id, $data);
+            $updatedTopic = $this->topicService->update($id, $data);
 
             if ($updatedTopic) {
                 return response()->json($updatedTopic);
@@ -128,10 +129,16 @@ class TopicController extends Controller
     public function destroy($id)
     {
         try {
-            $topic = $this->topicRepository->destroy($id);
+            $questions = $this->topicRepository->questions($id);
 
-            if ($topic) {
-                return response()->json($id);
+            if (count($questions) > 0) {
+                return response()->json(['message' => 'Please delete question from this topic before deleting this topic']);
+            } else {
+                $topic = $this->topicService->destroy($id);
+
+                if ($topic) {
+                    return response()->json($id);
+                }
             }
         } catch (Exception $e) {
             return response()->json(['message' => $e->getMessage()], Response::HTTP_FORBIDDEN);

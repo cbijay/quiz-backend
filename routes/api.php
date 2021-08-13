@@ -2,15 +2,22 @@
 
 use App\Http\Controllers\Admin\MessageController;
 use Illuminate\Support\Facades\Route;
+
 use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\Auth\RegisterController;
+
+use App\Http\Controllers\Auth\UserController;
 use App\Http\Controllers\Admin\StudentController;
+
 use App\Http\Controllers\Admin\TopicController;
 use App\Http\Controllers\Admin\QuestionController as AdminQuestionController;
+
 use App\Http\Controllers\Admin\ReportController;
 use App\Http\Controllers\Admin\EventController;
-use App\Http\Controllers\Auth\UserController;
+
+use App\Http\Controllers\Admin\PaymentController;
 use App\Http\Controllers\Site\QuestionController;
+
 use App\Http\Controllers\Site\AnswerController;
 use App\Http\Controllers\Site\SubjectController;
 
@@ -45,9 +52,9 @@ Route::group(['prefix' => 'v1'], function () {
         Route::get('/students', [StudentController::class, 'index']);
         Route::post('/students', [StudentController::class, 'store']);
         Route::get('/students/{id}', [StudentController::class, 'show']);
-        Route::put('/students/{id}', [StudentController::class, 'update']);
+        Route::post('/students/{id}', [StudentController::class, 'update']);
         Route::delete('/students/{id}', [StudentController::class, 'destroy']);
-        Route::post('/students/{id}/{status}', [StudentController::class, 'updateStatus']);
+        Route::put('/students/{id}/{status}', [StudentController::class, 'updateStatus']);
 
         //Topics Route
         Route::get('/topics', [TopicController::class, 'index']);
@@ -66,7 +73,7 @@ Route::group(['prefix' => 'v1'], function () {
         Route::post('/questions/topics/{topicId}', [AdminQuestionController::class, 'store']);
         Route::post('/questions/import/{topicId}', [AdminQuestionController::class, 'importExcel']);
         Route::get('/questions/{id}', [AdminQuestionController::class, 'show']);
-        Route::put('/questions/{id}', [AdminQuestionController::class, 'update']);
+        Route::post('/questions/{id}', [AdminQuestionController::class, 'update']);
         Route::delete('/questions/{id}', [AdminQuestionController::class, 'destroy']);
 
         //Report Route
@@ -86,6 +93,9 @@ Route::group(['prefix' => 'v1'], function () {
         Route::get('/events/{id}', [EventController::class, 'show']);
         Route::put('/events/{id}', [EventController::class, 'update']);
         Route::delete('/events/{id}', [EventController::class, 'destroy']);
+
+        //Payment Route
+        Route::get('/payments', [PaymentController::class, 'index']);
     });
 
     //Site Routes
@@ -106,7 +116,10 @@ Route::group(['prefix' => 'v1'], function () {
         Route::get('/events', [EventController::class, 'index']);
 
         //Payment Route
-        Route::get('paymentsuccess', 'PaymentController@payment_success')->name('payment_success');
-        Route::get('paymenterror', 'PaymentController@payment_error');
+        //Route::get('checkout',[PaymentController::class, 'checkout']);
+        Route::post('checkout', [PaymentController::class, 'checkout'])->name('payment_success');
+        /*  Route::get('paymentsuccess', [PaymentController::class, 'payment_success'])->name('payment_success');
+        //Route::get('paymentsuccess/{data}', [PaymentController::class, 'payment_success'])->name('payment_success');
+        Route::get('paymenterror', [PaymentController::class, 'payment_error'])->name('payment_error'); */
     });
 });

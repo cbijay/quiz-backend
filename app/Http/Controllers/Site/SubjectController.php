@@ -3,21 +3,21 @@
 namespace App\Http\Controllers\Site;
 
 use App\Http\Controllers\Controller;
-use App\Repositories\SubjectRepository;
+use App\Services\SubjectService;
 
 class SubjectController extends Controller
 {
     //
-    protected $subjectRepository;
+    protected $subjectService;
 
-    public function __construct(SubjectRepository $subjectRepository)
+    public function __construct(SubjectService $subjectService)
     {
-        $this->subjectRepository = $subjectRepository;
+        $this->subjectService = $subjectService;
     }
 
     public function index()
     {
-        $subjects = $this->subjectRepository->get();
+        $subjects = $this->subjectService->get();
         return response()->json($subjects);
     }
 }

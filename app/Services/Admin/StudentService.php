@@ -2,59 +2,29 @@
 
 namespace App\Services\Admin;
 
-use App\Models\Topic;
-use App\Models\User;
-use Illuminate\Support\Facades\Cache;
+use App\Models\Student;
 
 class StudentService
 {
-    public function getStudent()
+    protected $student;
+
+    public function __construct(Student $student)
     {
-        $student = User::where('role', '!=', 'A')->with('student')->get();
-        return $student;
+        $this->student = $student;
     }
 
-    public function latestStudent()
+    public function paginate($num)
     {
-        $student = User::where('role', '!=', 'A')->latest()->get();
-        return $student;
+        return $this->student->paginate($num);
     }
 
-    public function updateStatus($id, $status)
+    public function store(array $data)
     {
-        $user = User::where('id', $id)->update(['status' => $status]);
-
-        return $user;
+        return $this->student->create($data);
     }
 
-    public function participants()
+    public function update($id, array $data)
     {
-        $students = User::where('role', '!=', 'A')->where('status', 1)->with('answers')->get();
-
-        $activeStudent = collect();
-
-        foreach ($students as $student) {
-            $answers = $student->answers;
-
-            $participant = (object) [
-                'id'    => $student->id,
-                'name' => $student->name,
-                'image' => $student->user_img,
-                'per_q_mark' => 0,
-                'isOnline' => $student->is_online,
-                'answers' => $student->answers,
-            ];
-
-            if (count($answers) > 0) {
-                foreach ($answers as $answer) {
-                    $topic = Topic::where('id', $answer->topic_id)->first();
-                    $participant->per_q_mark = $topic->per_q_mark;
-                }
-            }
-
-            $activeStudent->push($participant);
-        }
-
-        return $activeStudent;
+        return $this->student->find($id)->update($data);
     }
 }

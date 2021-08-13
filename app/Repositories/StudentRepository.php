@@ -1,14 +1,15 @@
 <?php
-
 namespace App\Repositories;
 
-use App\Models\Student;
+
 use App\Repositories\BaseRepository;
 
-class StudentRepository extends BaseRepository
+class AnswerRepository
 {
-    public function __construct(Student $student)
-    {
-        parent::__construct($student);
-    }
+
+public function getPayments()
+{
+    $payments = $this->payment->with('students')->get();
+
+    return $payments;
 }

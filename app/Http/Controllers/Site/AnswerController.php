@@ -2,13 +2,13 @@
 
 namespace App\Http\Controllers\Site;
 
-use App\Events\ActiveQuestion;
-use App\Events\ParticipantScore;
 use App\Http\Controllers\Controller;
 use App\Repositories\AnswerRepository;
 use App\Services\AnswerService;
-use Exception;
+use App\Events\ActiveQuestion;
+use App\Events\ParticipantScore;
 use Illuminate\Http\Request;
+use Exception;
 use Illuminate\Http\Response;
 
 class AnswerController extends Controller
@@ -28,7 +28,7 @@ class AnswerController extends Controller
     {
         try {
             $input = $request->all();
-            $answer = $this->answerService->participantAnswer($input);
+            $answer = $this->answerRepository->participantAnswer($input);
 
             if ($answer) {
                 return response()->json([
@@ -36,7 +36,7 @@ class AnswerController extends Controller
                 ], 400);
             }
 
-            $userAnswer = $this->answerRepository->store($input);
+            $userAnswer = $this->answerService->store($input);
 
             broadcast(new ParticipantScore())->toOthers();
 

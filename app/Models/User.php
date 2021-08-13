@@ -48,12 +48,12 @@ class User extends Authenticatable
 
     public function answers()
     {
-        return $this->hasMany('App\Models\Answer')->latest();
+        return $this->hasMany('App\Models\Answer')->latest('created_at');
     }
 
     public function topic()
     {
-        return $this->belongsToMany('App\Topic', 'topic_user')
+        return $this->belongsToMany('App\Models\Topic', 'topic_user')
             ->withPivot('amount', 'transaction_id', 'status')
             ->withTimestamps();
     }
@@ -61,5 +61,10 @@ class User extends Authenticatable
     public function studentAnswer($topicId)
     {
         return $this->answers()->where('topic_id', $topicId)->get();
+    }
+
+    public function payment()
+    {
+        return $this->hasOne('App\Models\Payment');
     }
 }

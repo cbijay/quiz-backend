@@ -23,7 +23,7 @@ class LoginController extends Controller
 
                 User::where('id', Auth::user()->id)->update(['is_online' => 1]);
 
-                return response()->json([
+                $authUser = [
                     'id'    => $user->id,
                     'name'  => $user->name,
                     'email' => $user->email,
@@ -35,7 +35,17 @@ class LoginController extends Controller
                     'is_online' => $user->is_online,
                     'image' => $user->user_img,
                     'token' =>  $token
-                ], 200);
+                ];
+
+                if ($authUser && $authUser['role'] === 'A') {
+                    return response()->json($user, 200);
+                } else if ($authUser && $authUser['role'] === 'S' && $authUser['status'] === 1) {
+                    return response()->json($user, 200);
+                } else {
+                    return response()->json([
+                        'message' => 'You are not active participant to participate in quiz!!'
+                    ], 400);
+                }
             }
 
             return response()->json([

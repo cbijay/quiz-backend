@@ -3,8 +3,8 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
-use App\Repositories\StudentRepository;
 use App\Repositories\UserRepository;
+use App\Services\Admin\UserService;
 use App\Services\Admin\StudentService;
 use Exception;
 use Illuminate\Http\Request;
@@ -14,28 +14,16 @@ use Illuminate\Support\Facades\Hash;
 class StudentController extends Controller
 {
     //
-    protected $userRepository, $studentRepository, $studentService;
+    protected $userService, $userRepository, $studentService;
 
     public function __construct(
+        UserService $userService,
         UserRepository $userRepository,
-        StudentRepository $studentRepository,
         StudentService $studentService
     ) {
+        $this->userService = $userService;
         $this->userRepository = $userRepository;
-        $this->studentRepository = $studentRepository;
         $this->studentService = $studentService;
-    }
-
-    public function latest()
-    {
-        $students = $this->studentService->latestStudent();
-        return response()->json($students);
-    }
-
-    public function participants()
-    {
-        $students = $this->studentService->participants();
-        return response()->json($students);
     }
 
     /**
@@ -45,7 +33,7 @@ class StudentController extends Controller
      */
     public function index()
     {
-        $students = $this->studentService->getStudent();
+        $students = $this->userRepository->getStudent();
         return response()->json($students);
     }
 
@@ -60,8 +48,9 @@ class StudentController extends Controller
         try {
             $input = $request->all();
 
-            if ($file = $request->file('user_img')) {
+            $file = $request->file('image');
 
+            if ($file) {
                 $name = 'user_' . time() . $file->getClientOriginalName();
                 $file->move('images/users/', $name);
                 $input['user_img'] = $name;
@@ -79,7 +68,7 @@ class StudentController extends Controller
                 'status' => 0,
             ];
 
-            $user = $this->userRepository->store($userData);
+            $user = $this->userService->store($userData);
 
             $studentData = [
                 'grade' => $input['grade'],
@@ -91,7 +80,7 @@ class StudentController extends Controller
                 'user_id'   => $user->id,
             ];
 
-            $student = $this->studentRepository->store($studentData);
+            $student = $this->studentService->store($studentData);
 
 
             if ($user && $student) {
@@ -113,7 +102,6 @@ class StudentController extends Controller
         //
         try {
             $user = $this->userRepository->withById($id, 'student');
-            //$student = $this->studentRepository->getById($id);
 
             $student = [
                 'id'    => $user->id,
@@ -132,10 +120,6 @@ class StudentController extends Controller
             ];
 
             return response()->json($student);
-
-            /* if ($user) {
-                return response()->json($user);
-            } */
         } catch (Exception $e) {
             return response()->json(['message' => $e->getMessage()], Response::HTTP_FORBIDDEN);
         }
@@ -151,12 +135,13 @@ class StudentController extends Controller
     public function update(Request $request, $id)
     {
         try {
-            $user = $this->userRepository->getById($id);
+            $user = $this->userService->getById($id);
 
             $input = $request->all();
-            //$data['user_img'] = $student->user_img;
 
-            if ($file = $request->file('user_img')) {
+            $file = $request->file('user_img');
+
+            if ($file) {
                 $name = 'user_' . time() . $file->getClientOriginalName();
                 $file->move('images/users/', $name);
                 $input['user_img'] = $name;
@@ -165,7 +150,7 @@ class StudentController extends Controller
             $userData = [
                 'name' => $input['name'],
                 'email' => $input['email'],
-                'password' => Hash::make($input['password']),
+                'password' => $request->password ? Hash::make($input['password']) : $user->password,
                 'mobile' => $request->mobile ? $input['mobile'] : "",
                 'address' => $input['address'],
                 'city' => $input['city'],
@@ -176,7 +161,7 @@ class StudentController extends Controller
 
             //return response()->json($input);
 
-            $updatedUser = $this->userRepository->update($id, $userData);
+            $updatedUser = $this->userService->update($id, $userData);
 
             $studentData = [
                 'grade' => $input['grade'],
@@ -188,10 +173,12 @@ class StudentController extends Controller
                 'user_id'   => $user->id,
             ];
 
-            $updatedStudent = $this->studentRepository->update($user->student->id, $studentData);
+            $updatedStudent = $this->studentService->update($user->student->id, $studentData);
+
+            $student = $this->userRepository->withById($id, 'student');
 
             if ($updatedUser && $updatedStudent) {
-                return response()->json($updatedStudent);
+                return response()->json($student);
             }
         } catch (Exception $e) {
             return response()->json(['message' => $e->getMessage()], Response::HTTP_FORBIDDEN);
@@ -207,10 +194,16 @@ class StudentController extends Controller
     public function destroy($id)
     {
         try {
-            $student = $this->userRepository->destroy($id);
+            $answers = $this->userRepository->userAnswers($id);
 
-            if ($student) {
-                return response()->json($id);
+            if (count($answers) > 0) {
+                return response()->json(['message' => 'Please reset user answers from student report before deleting this user']);
+            } else {
+                $student = $this->userService->destroy($id);
+
+                if ($student) {
+                    return response()->json($id);
+                }
             }
         } catch (Exception $e) {
             return response()->json(['message' => $e->getMessage()], Response::HTTP_FORBIDDEN);
@@ -220,14 +213,26 @@ class StudentController extends Controller
     public function updateStatus($id, $status)
     {
         try {
-            $updateStatus = $this->studentService->updateStatus($id, $status);
+            $updateStatus = $this->userRepository->updateStatus($id, $status);
 
             if ($updateStatus) {
-                $student = $this->studentService->getStudent();
+                $student = $this->userRepository->getStudent();
                 return response()->json($student);
             }
         } catch (Exception $e) {
             return response()->json(['message' => $e->getMessage()], Response::HTTP_FORBIDDEN);
         }
+    }
+
+    public function latest()
+    {
+        $students = $this->userRepository->latestStudent();
+        return response()->json($students);
+    }
+
+    public function participants()
+    {
+        $students = $this->userRepository->participants();
+        return response()->json($students);
     }
 }

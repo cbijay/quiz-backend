@@ -2,116 +2,49 @@
 
 namespace App\Services\Admin;
 
-use App\Imports\QuestionsImport;
 use App\Models\Question;
-use App\Models\Topic;
-use App\Models\User;
-use Maatwebsite\Excel\Facades\Excel;
 
 class QuestionService
 {
-    public function askedQuestion()
-    {
-        $questions = Question::where('status', '!=', 0)->get();
+    protected $question;
 
-        return $questions;
+    public function __construct(Question $question) {
+        $this->question = $question;
     }
 
-    public function getTopics()
+    public function get()
     {
-        $topics = Topic::with('question')->get();
-        return $topics;
+        return $this->question->get();
     }
 
-    public function getByTopics($topicId)
+    public function paginate($num)
     {
-        $questions = Question::where('topic_id', $topicId)->get();
-        return $questions;
+        return $this->question->paginate($num);
     }
 
-    public function importExcel($topicId, $file)
+    public function store(array $data)
     {
-        $excelImport = Excel::import(new QuestionsImport($topicId), $file);
-        return $excelImport;
+        return $this->question->create($data);
     }
 
-    public function questionActive($id)
+    public function getById($id)
     {
-        $question = Question::find($id);
-        $question->status = 1;
-        $question->save();
-
-        return $question;
+        return $this->question->findOrFail($id);
     }
 
-    public function updateStatus($id, $status)
+    public function withById($id, $table)
     {
-        $question = Question::where('id', $id)->update(['status' => $status]);
-
-        return $question;
+        return $this->question->where('id', $id)->with($table)->first();
     }
 
-    public function openQuestion($id, $status)
+    public function update($id, array $data)
     {
-        $question = Question::find($id);
-        $question->status = $status;
-        $question->reset = $status == 2 ? 0 : 1;
-        $question->save();
-
-        return $question;
+        return $this->question->find($id)->update($data);
+        
     }
 
-    public function resetTimer($id, $status)
+    public function destroy($id)
     {
-        $question = Question::find($id);
-        $question->reset = $status;
-        $question->save();
-
-        return $question;
-    }
-
-    public function timeOutQuestion()
-    {
-        $question = Question::orderBy('updated_at', 'DESC')->first();
-        $userAnswers = isset($question) ?? count($question->answers) > 0 ? $question->answers : [];
-
-        $activeUser = collect();
-
-        if ($question) {
-            $activeQuestion = (object) [
-                'id'    => isset($question) ? $question->id : '',
-                'topic_id'  =>  isset($question) ? $question->topic_id : 0,
-                'question' => isset($question) ? $question->question : '',
-                'a' => isset($question) ? $question->a : '',
-                'b' => isset($question) ? $question->b : '',
-                'c' => isset($question) ? $question->c : '',
-                'd' => isset($question) ? $question->d : '',
-                'timer' => isset($question) ? $question->topic->timer : 0,
-                'answer' => isset($question) ? $question->answer : '',
-                'status' => isset($question) ? $question->status : 0,
-                'users' => [],
-            ];
-        } else {
-            $activeQuestion = '';
-        }
-
-
-        if (count($userAnswers) > 0) {
-            foreach ($userAnswers as $answer) {
-                $user = User::where('id', $answer->user_id)->first();
-
-                $answerUser = (object)[
-                    'id'    =>  $user->id,
-                    'name' => $user->name,
-                    'user_img' => $user->user_img,
-                    'answer' => $answer
-                ];
-
-                $activeUser->push($answerUser);
-            }
-            $activeQuestion->users = $activeUser;
-        }
-
-        return $activeQuestion;
+        return $this->question->destroy($id);
     }
 }

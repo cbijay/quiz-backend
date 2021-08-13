@@ -3,10 +3,12 @@
 namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
-use App\Repositories\StudentRepository;
+use App\Repositories\PaymentRepository;
 use Illuminate\Http\Request;
-use App\Repositories\UserRepository;
-use App\Services\PaypalService;
+use App\Services\Admin\StudentService;
+use App\Services\Admin\UserService;
+use App\Services\PaymentService;
+use App\Session;
 use Exception;
 use Illuminate\Http\Response;
 use Illuminate\Support\Facades\Hash;
@@ -14,16 +16,18 @@ use Illuminate\Support\Facades\Hash;
 class RegisterController extends Controller
 {
     //
-    protected $userRepository, $studentRepository, $paypalService;
+    protected $userService, $studentService, $paymentRepository, $paymentService;
 
     public function __construct(
-        UserRepository $userRepository,
-        StudentRepository $studentRepository,
-        PaypalService $paypalService
+        StudentService $studentService,
+        UserService $userService,
+        PaymentRepository $paymentRepository,
+        PaymentService $paymentService
     ) {
-        $this->userRepository = $userRepository;
-        $this->studentRepository = $studentRepository;
-        $this->paypalService = $paypalService;
+        $this->userService = $userService;
+        $this->studentService = $studentService;
+        $this->paymentRepository = $paymentRepository;
+        $this->paymentService = $paymentService;
     }
 
     public function register(Request $request)
@@ -49,7 +53,7 @@ class RegisterController extends Controller
                     'status' => 0,
                 ];
 
-                $user = $this->userRepository->store($userData);
+                $user = $this->userService->store($userData);
 
                 $studentData = [
                     'grade' => $input['grade'],
@@ -61,19 +65,36 @@ class RegisterController extends Controller
                     'user_id'   => $user->id,
                 ];
 
-                $student = $this->studentRepository->store($studentData);
-
-                $subjects = explode(',', $input['subjects']);
-
-                $student->subjects()->attach($subjects);
+                $student = $this->studentService->store($studentData);
 
                 if ($user && $student) {
-                    return response()->json([$user, $student]);
+                    $paymentResponse = $this->paymentRepository->payment($input);
+
+                    if ($paymentResponse->status === "succeeded") {
+                        $paymentData = [
+                            'payment_id' => $paymentResponse->id,
+                            'subjects' => $request->subjects,
+                            'amount' => $request->price,
+                            'currency' => strtoupper($paymentResponse->currency),
+                            'status' => $paymentResponse->status,
+                            'user_id' => $user->id
+                        ];
+
+                        $payment = $this->paymentService->store($paymentData);
+
+                        if ($payment) {
+                            return response()->json(['message' => 'Payment Successful, User has been registered!!', 'register' => true]);
+                        }
+                    }
                 }
-            } else {
-                return response()->json(['message' => 'Please accept terms and conditions']);
             }
         } catch (Exception $e) {
+            $errorCode = $e->errorInfo[1];
+
+            if ($errorCode == 1062) {
+                return response()->json(['message' => 'Email already exists!!'], Response::HTTP_CONFLICT);
+            }
+
             return response()->json(['message' => $e->getMessage()], Response::HTTP_FORBIDDEN);
         }
     }

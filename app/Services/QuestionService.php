@@ -24,7 +24,7 @@ class QuestionService
                 'b' => isset($question) ? $question->b : '',
                 'c' => isset($question) ? $question->c : '',
                 'd' => isset($question) ? $question->d : '',
-                'timer' => isset($question) ? $question->topic->timer : 0,
+                'timer' => isset($question->topic) ? $question->topic->timer : 0,
                 'answer' => isset($question) ? $question->answer : '',
                 'status' => isset($question) ? $question->status : 0,
                 'reset' => $question->reset,

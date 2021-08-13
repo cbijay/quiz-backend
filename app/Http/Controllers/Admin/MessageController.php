@@ -3,7 +3,7 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
-use App\Repositories\MessageRepository;
+use App\Services\Admin\MessageService;
 use Illuminate\Http\Request;
 use Exception;
 use Illuminate\Http\Response;
@@ -11,11 +11,12 @@ use Illuminate\Http\Response;
 class MessageController extends Controller
 {
     //
-    protected $messageRepository, $messageService;
+    protected $messageService;
 
-    public function __construct(MessageRepository $messageRepository)
+    public function __construct(MessageService $messageService)
     {
-        $this->messageRepository = $messageRepository;
+        $this->messageService = $messageService;
+        $this->messageService = $messageService;
     }
 
     /**
@@ -26,7 +27,7 @@ class MessageController extends Controller
     public function index()
     {
 
-        $messages = $this->messageRepository->get();
+        $messages = $this->messageService->get();
         return response()->json($messages);
     }
 
@@ -41,7 +42,7 @@ class MessageController extends Controller
         try {
             $data = $request->all();
 
-            $message = $this->messageRepository->store($data);
+            $message = $this->messageService->store($data);
 
             if ($message) {
                 return response()->json($message);
@@ -60,7 +61,7 @@ class MessageController extends Controller
     {
         //
         try {
-            $message = $this->messageRepository->getById($id);
+            $message = $this->messageService->getById($id);
 
             if ($message) {
                 return response()->json($message);
@@ -82,7 +83,7 @@ class MessageController extends Controller
         try {
             $data = $request->all();
 
-            $updatedMessage = $this->messageRepository->update($id, $data);
+            $updatedMessage = $this->messageService->update($id, $data);
 
             if ($updatedMessage) {
                 return response()->json($updatedMessage);
@@ -101,7 +102,7 @@ class MessageController extends Controller
     public function destroy($id)
     {
         try {
-            $message = $this->messageRepository->destroy($id);
+            $message = $this->messageService->destroy($id);
 
             if ($message) {
                 return response()->json($id);

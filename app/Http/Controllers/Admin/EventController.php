@@ -3,7 +3,7 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
-use App\Repositories\EventRepository;
+use App\Services\Admin\EventService;
 use Illuminate\Http\Request;
 use Exception;
 use Illuminate\Http\Response;
@@ -11,11 +11,11 @@ use Illuminate\Http\Response;
 class EventController extends Controller
 {
     //
-    protected $eventRepository;
+    protected $eventService;
 
-    public function __construct(EventRepository $eventRepository)
+    public function __construct(EventService $eventService)
     {
-        $this->eventRepository = $eventRepository;
+        $this->eventService = $eventService;
     }
 
     /**
@@ -26,7 +26,7 @@ class EventController extends Controller
     public function index()
     {
 
-        $events = $this->eventRepository->get();
+        $events = $this->eventService->get();
         return response()->json($events);
     }
 
@@ -41,13 +41,13 @@ class EventController extends Controller
         try {
             $data = $request->all();
 
-            $event = $this->eventRepository->store($data);
+            $event = $this->eventService->store($data);
 
             if ($event) {
                 return response()->json($event);
             }
         } catch (Exception $e) {
-            return response()->json(['event' => $e->getEvent()], Response::HTTP_FORBIDDEN);
+            return response()->json(['event' => $e->getMessage()], Response::HTTP_FORBIDDEN);
         }
     }
     /**
@@ -60,13 +60,13 @@ class EventController extends Controller
     {
         //
         try {
-            $event = $this->eventRepository->getById($id);
+            $event = $this->eventService->getById($id);
 
             if ($event) {
                 return response()->json($event);
             }
         } catch (Exception $e) {
-            return response()->json(['event' => $e->getEvent()], Response::HTTP_FORBIDDEN);
+            return response()->json(['event' => $e->getMessage()], Response::HTTP_FORBIDDEN);
         }
     }
 
@@ -82,13 +82,13 @@ class EventController extends Controller
         try {
             $data = $request->all();
 
-            $updatedEvent = $this->eventRepository->update($id, $data);
+            $updatedEvent = $this->eventService->update($id, $data);
 
             if ($updatedEvent) {
                 return response()->json($updatedEvent);
             }
         } catch (Exception $e) {
-            return response()->json(['event' => $e->getEvent()], Response::HTTP_FORBIDDEN);
+            return response()->json(['event' => $e->getMessage()], Response::HTTP_FORBIDDEN);
         }
     }
 
@@ -101,13 +101,13 @@ class EventController extends Controller
     public function destroy($id)
     {
         try {
-            $event = $this->eventRepository->destroy($id);
+            $event = $this->eventService->destroy($id);
 
             if ($event) {
                 return response()->json($id);
             }
         } catch (Exception $e) {
-            return response()->json(['event' => $e->getEvent()], Response::HTTP_FORBIDDEN);
+            return response()->json(['event' => $e->getMessage()], Response::HTTP_FORBIDDEN);
         }
     }
 }

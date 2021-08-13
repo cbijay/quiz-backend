@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Admin;
 
 use App\Events\ActiveQuestion;
 use App\Http\Controllers\Controller;
+use App\Http\Requests\QuestionRequest;
 use Illuminate\Http\Request;
 use App\Repositories\QuestionRepository;
 use App\Services\Admin\QuestionService;
@@ -25,14 +26,14 @@ class QuestionController extends Controller
 
     public function askedQuestion()
     {
-        $questions = $this->questionService->askedQuestion();
+        $questions = $this->questionRepository->askedQuestion();
 
         return response()->json($questions);
     }
 
     public function allQuestions()
     {
-        $topics = $this->questionRepository->get();
+        $topics = $this->questionService->get();
 
         return response()->json($topics);
     }
@@ -40,10 +41,10 @@ class QuestionController extends Controller
     public function updateStatus($topicId, $id, $status)
     {
         try {
-            $updateStatus = $this->questionService->updateStatus($id, $status);
+            $updateStatus = $this->questionRepository->updateStatus($id, $status);
 
             if ($updateStatus) {
-                $questions = $this->questionService->getByTopics($topicId);
+                $questions = $this->questionRepository->getByTopics($topicId);
                 return response()->json($questions);
             }
         } catch (Exception $e) {
@@ -54,7 +55,7 @@ class QuestionController extends Controller
     public function openQuestion($id, $status)
     {
         try {
-            $question = $this->questionService->openQuestion($id, $status);
+            $question = $this->questionRepository->openQuestion($id, $status);
 
             event(new ActiveQuestion());
 
@@ -69,7 +70,7 @@ class QuestionController extends Controller
     public function resetTimer($id, $status)
     {
         try {
-            $question = $this->questionService->resetTimer($id, $status);
+            $question = $this->questionRepository->resetTimer($id, $status);
 
             if ($question) {
                 return response()->json($question);
@@ -81,7 +82,7 @@ class QuestionController extends Controller
 
     public function topics()
     {
-        $topics = $this->questionService->getTopics();
+        $topics = $this->questionRepository->getTopics();
 
         return response()->json($topics);
     }
@@ -92,7 +93,7 @@ class QuestionController extends Controller
      */
     public function index($topicId)
     {
-        $questions = $this->questionService->getByTopics($topicId);
+        $questions = $this->questionRepository->getByTopics($topicId);
 
         return response()->json($questions);
     }
@@ -106,16 +107,17 @@ class QuestionController extends Controller
     public function importExcel($topicId, Request $request)
     {
         try {
+
             if ($request->hasFile('question_file')) {
                 $file = $request->file('question_file');
-                $excel = $this->questionService->importExcel($topicId, $file);
+                $excel = $this->questionRepository->importExcel($topicId, $file);
             }
 
             if ($excel) {
                 return response()->json($excel);
             }
         } catch (Exception $e) {
-            return response()->json(['message' => $e->getMessage()], Response::HTTP_FORBIDDEN);
+            return response()->json(['message' => "Error while uploading data..please check the format"], Response::HTTP_FORBIDDEN);
         }
     }
 
@@ -137,7 +139,7 @@ class QuestionController extends Controller
                 $data['question_img'] = $name;
             }
 
-            $question = $this->questionRepository->store($data);
+            $question = $this->questionService->store($data);
 
             if ($question) {
                 return response()->json($question);
@@ -156,7 +158,7 @@ class QuestionController extends Controller
     public function show($id)
     {
         try {
-            $question = $this->questionRepository->getById($id);
+            $question = $this->questionService->getById($id);
 
             if ($question) {
                 return response()->json($question);
@@ -173,14 +175,16 @@ class QuestionController extends Controller
      * @param  int  $id
      * @return \Illuminate\Http\Response
      */
-    public function update(Request $request, $id)
+    public function update($id, Request $request)
     {
         try {
             $data = $request->all();
 
-            $question = $this->questionRepository->getById($id);
+            $question = $this->questionService->getById($id);
 
-            if ($file = $request->file('question_img')) {
+            $file = $request->file('question_img');
+
+            if ($file) {
 
                 $name = 'question_' . time() . $file->getClientOriginalName();
 
@@ -192,7 +196,7 @@ class QuestionController extends Controller
                 $data['question_img'] = $name;
             }
 
-            $updatedQuestion = $this->questionRepository->update($id, $data);
+            $updatedQuestion = $this->questionService->update($id, $data);
 
             if ($updatedQuestion) {
                 return response()->json($updatedQuestion);
@@ -211,16 +215,17 @@ class QuestionController extends Controller
     public function destroy($id)
     {
         try {
-            $question = $this->questionRepository->getById($id);
+            $answers = $this->questionRepository->answers($id);
 
-            if ($question->question_img != null) {
-                unlink(public_path() . '/images/questions/' . $question->question_img);
-            }
+            if (count($answers) > 0) {
+                return response()->json(['message' => 'Please reset user answers from student report before deleting this question']);
+            } else {
 
-            $deletedQuestion = $this->questionRepository->destroy($id);
+                $deletedQuestion = $this->questionService->destroy($id);
 
-            if ($deletedQuestion) {
-                return response()->json($id);
+                if ($deletedQuestion) {
+                    return response()->json($id);
+                }
             }
         } catch (Exception $e) {
             return response()->json(['message' => $e->getMessage()], Response::HTTP_FORBIDDEN);

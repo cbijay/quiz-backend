@@ -23,10 +23,6 @@ class Question extends Model
         'question_video_link'
     ];
 
-    /* protected $dispatchesEvents = [
-        'active' => QuestionActive::class
-    ]; */
-
     public function answers()
     {
         return $this->hasMany('App\Models\Answer');
